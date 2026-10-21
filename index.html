@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CineStream IPTV</title>
+
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --card: #131b2e;
+      --hover: #1f2b48;
+      --primary: #2563eb;
+      --primary-active: #1d4ed8;
+      --accent-live: #ef4444;
+      --accent-vod: #8b5cf6;
+      --accent-series: #10b981;
+      --text: #ffffff;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Topo Fixo */
+    header {
+      height: 60px;
+      padding: 0 16px;
+      background: #0d1322;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--card);
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+      opacity: 0.85;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: #3b82f6;
+    }
+
+    .btn-primary:active {
+      background: var(--primary-active);
+    }
+
+    .btn-success {
+      background: #059669;
+      border-color: #10b981;
+    }
+
+    /* Contêiner de Telas */
+    main {
+      flex: 1;
+      position: relative;
+      overflow-y: auto;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      min-height: 100%;
+      padding: 16px;
+      flex-direction: column;
+    }
+
+    .screen.active {
+      display: flex !important;
+    }
+
+    /* Tela 1: Início */
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .nav-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .nav-card:active {
+      background: var(--hover);
+    }
+
+    .nav-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .nav-card.live::before { background: var(--accent-live); }
+    .nav-card.vod::before { background: var(--accent-vod); }
+    .nav-card.series::before { background: var(--accent-series); }
+
+    .nav-card .icon {
+      font-size: 2.8rem;
+      margin-bottom: 6px;
+    }
+
+    .nav-card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 2px;
+    }
+
+    .nav-card span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .home-buttons {
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 600px;
+      margin-inline: auto;
+      width: 100%;
+    }
+
+    /* Tela 2: Adicionar Lista */
+    .form-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .input-field {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+
+    textarea.input-field {
+      height: 110px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
+    /* Tela 3: TV ao Vivo */
+    #screen-live {
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .live-layout {
+      display: flex;
+      height: 100%;
+      width: 100%;
+    }
+
+    .channel-column {
+      width: 42%;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: #0d1322;
+    }
+
+    .column-title {
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #090d16;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .channel-list {
+      flex: 1;
+      overflow-y: auto;
+      list-style: none;
+    }
+
+    .channel-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .channel-item:active, .channel-item.active {
+      background: var(--hover);
+      border-left: 4px solid var(--accent-live);
+    }
+
+    .player-column {
+      width: 58%;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+    }
+
+    .video-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .video-info {
+      padding: 12px;
+      background: #0d1322;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Tela 4 e 5: Catálogo VOD */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .media-card {
+      background: var(--card);
+      border-radius: 8px;
+      aspect-ratio: 2/3;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .media-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .media-card-title {
+      position: absolute;
+      bottom: 0;
+      inset-inline: 0;
+      padding: 20px 6px 6px;
+      background: linear-gradient(0deg, #000 0%, transparent 100%);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Responsivo Móvel */
+    @media (max-width: 650px) {
+      .live-layout {
+        flex-direction: column-reverse;
+      }
+      .channel-column {
+        width: 100%;
+        height: 60%;
+      }
+      .player-column {
+        width: 100%;
+        height: 40%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topo de Navegação -->
+  <header>
+    <div class="brand">📺 CINESTREAM</div>
+    <div class="header-btns">
+      <button class="btn" id="btn-top-home">🏠 Início</button>
+      <button class="btn btn-primary" id="btn-top-add">➕ Adicionar Lista</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- TELA 1: INÍCIO -->
+    <section id="screen-home" class="screen active">
+      <div class="cards-container">
+        <div class="nav-card live" id="card-to-live">
+          <div class="icon">📡</div>
+          <h2>TV AO VIVO</h2>
+          <span id="cnt-live">0 canais carregados</span>
+        </div>
+        <div class="nav-card vod" id="card-to-vod">
+          <div class="icon">🎬</div>
+          <h2>FILMES</h2>
+          <span id="cnt-vod">0 títulos carregados</span>
+        </div>
+        <div class="nav-card series" id="card-to-series">
+          <div class="icon">🍿</div>
+          <h2>SÉRIES</h2>
+          <span id="cnt-series">0 títulos carregados</span>
+        </div>
+      </div>
+
+      <div class="home-buttons">
+        <button class="btn btn-primary" id="btn-home-add" style="padding: 14px;">
+          ➕ Inserir Minha Lista M3U
+        </button>
+        <button class="btn" id="btn-home-demo" style="padding: 14px;">
+          ✨ Carregar Canais Demo
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA 2: ADICIONAR LISTA -->
+    <section id="screen-add" class="screen">
+      <div class="form-box">
+        <h3 style="border-bottom: 1px solid var(--border); padding-bottom: 8px;">Adicionar Lista M3U / M3U8</h3>
+
+        <!-- Opção 1: Por Link -->
+        <div class="form-group">
+          <label>1. Digite a URL da lista:</label>
+          <input type="text" id="url-input" class="input-field" placeholder="http://servidor.com/get.php?username=...">
+          <button class="btn btn-primary" id="btn-submit-url" style="margin-top: 4px;">Baixar Lista por URL</button>
+        </div>
+
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem;">— OU —</div>
+
+        <!-- Opção 2: Arquivo Local -->
+        <div class="form-group">
+          <label>2. Escolha o arquivo .m3u do aparelho:</label>
+          <input type="file" id="file-input" class="input-field" accept=".m3u,.m3u8,.txt">
+        </div>
+
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem;">— OU —</div>
+
+        <!-- Opção 3: Colar Texto -->
+        <div class="form-group">
+          <label>3. Cole o texto da lista aqui:</label>
+          <textarea id="text-input" class="input-field" placeholder="#EXTM3U&#10;#EXTINF:-1,Nome Canal&#10;http://..."></textarea>
+          <button class="btn btn-success" id="btn-submit-text" style="margin-top: 4px;">Carregar Texto Colado</button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <button class="btn" id="btn-cancel-add">Voltar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA 3: TV AO VIVO -->
+    <section id="screen-live" class="screen">
+      <div class="live-layout">
+        <div class="channel-column">
+          <div class="column-title">Lista de Canais</div>
+          <ul class="channel-list" id="channel-container"></ul>
+        </div>
+        <div class="player-column">
+          <div class="video-container">
+            <video id="player" controls autoplay playsinline></video>
+          </div>
+          <div class="video-info">
+            <div>
+              <h4 id="current-name" style="font-size: 0.95rem;">Selecione um canal</h4>
+              <span id="current-group" style="font-size: 0.75rem; color: var(--text-muted);">Ao Vivo</span>
+            </div>
+            <button class="btn" id="btn-fullscreen">⛶ Tela Cheia</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA 4: FILMES -->
+    <section id="screen-vod" class="screen">
+      <h3>Filmes On Demand</h3>
+      <div class="grid-container" id="vod-container"></div>
+    </section>
+
+    <!-- TELA 5: SÉRIES -->
+    <section id="screen-series" class="screen">
+      <h3>Séries</h3>
+      <div class="grid-container" id="series-container"></div>
+    </section>
+  </main>
+
+  <!-- Carregamento do HLS assíncrono para prevenir congelamentos do APK -->
+  <script>
+    (function() {
+      const s = document.createElement('script');
+      s.src = "https://cdn.jsdelivr.net/npm/hls.js@latest";
+      s.onload = () => { window.hlsReady = true; };
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  <!-- Lógica da Aplicação -->
+  <script>
+    const state = {
+      channels: [],
+      vod: [],
+      series: []
+    };
+
+    let hlsInstance = null;
+    const player = document.getElementById('player');
+
+    // Troca de Telas
+    function goToScreen(screenName) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('screen-' + screenName);
+      if (target) {
+        target.classList.add('active');
+      }
+
+      if (screenName !== 'live' && !player.paused) {
+        player.pause();
+      }
+    }
+
+    // Leitor de Formato M3U
+    function parseM3U(content) {
+      const lines = content.split(/\r?\n/);
+      const items = [];
+      let temp = null;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('#EXTINF:')) {
+          temp = {};
+          const comma = line.indexOf(',');
+          temp.name = comma !== -1 ? line.substring(comma + 1).trim() : 'Canal Sem Nome';
+
+          const group = line.match(/group-title="([^"]+)"/i);
+          temp.group = group ? group[1] : 'Geral';
+
+          const logo = line.match(/tvg-logo="([^"]+)"/i);
+          temp.logo = logo ? logo[1] : '';
+        } else if (line && !line.startsWith('#')) {
+          if (temp) {
+            temp.url = line;
+            items.push(temp);
+            temp = null;
+          }
+        }
+      }
+      return items;
+    }
+
+    // Carregamento e Filtro dos Dados
+    function applyData(rawText) {
+      if (!rawText || rawText.trim().length === 0) {
+        alert("O conteúdo da lista está vazio.");
+        return;
+      }
+
+      const items = parseM3U(rawText);
+      if (items.length === 0) {
+        alert("Nenhum canal válido foi localizado no formato M3U.");
+        return;
+      }
+
+      state.channels = [];
+      state.vod = [];
+      state.series = [];
+
+      items.forEach(it => {
+        const g = (it.group || "").toLowerCase();
+        const n = (it.name || "").toLowerCase();
+
+        if (g.includes('filme') || g.includes('movie') || it.url.endsWith('.mp4') || it.url.endsWith('.mkv')) {
+          state.vod.push(it);
+        } else if (g.includes('serie') || g.includes('série') || n.match(/s\d+\s?e\d+/i)) {
+          state.series.push(it);
+        } else {
+          state.channels.push(it);
+        }
+      });
+
+      // Contadores do Painel
+      document.getElementById('cnt-live').innerText = `${state.channels.length} canais carregados`;
+      document.getElementById('cnt-vod').innerText = `${state.vod.length} títulos carregados`;
+      document.getElementById('cnt-series').innerText = `${state.series.length} títulos carregados`;
+
+      renderChannels();
+      renderVod();
+      renderSeries();
+
+      try {
+        if (rawText.length < 3000000) {
+          localStorage.setItem('iptv_cache', rawText);
+        }
+      } catch (e) {}
+
+      alert(`Sucesso! ${items.length} itens processados.`);
+      goToScreen('home');
+    }
+
+    // Renderização dos Canais
+    function renderChannels() {
+      const box = document.getElementById('channel-container');
+      box.innerHTML = '';
+
+      state.channels.forEach((ch) => {
+        const li = document.createElement('li');
+        li.className = 'channel-item';
+        li.innerHTML = `<span>▶</span> <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ch.name}</span>`;
+        li.onclick = () => {
+          document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+          li.classList.add('active');
+          playStream(ch);
+        };
+        box.appendChild(li);
+      });
+    }
+
+    // Renderização dos Filmes
+    function renderVod() {
+      const box = document.getElementById('vod-container');
+      box.innerHTML = '';
+
+      state.vod.slice(0, 80).forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        card.innerHTML = `
+          <img src="${m.logo || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400'}" onerror="this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400'" />
+          <div class="media-card-title">${m.name}</div>
+        `;
+        card.onclick = () => {
+          goToScreen('live');
+          playStream(m);
+        };
+        box.appendChild(card);
+      });
+    }
+
+    // Renderização das Séries
+    function renderSeries() {
+      const box = document.getElementById('series-container');
+      box.innerHTML = '';
+
+      state.series.slice(0, 80).forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        card.innerHTML = `
+          <img src="${s.logo || 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400'}" onerror="this.src='https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400'" />
+          <div class="media-card-title">${s.name}</div>
+        `;
+        card.onclick = () => {
+          goToScreen('live');
+          playStream(s);
+        };
+        box.appendChild(card);
+      });
+    }
+
+    // Reprodução de Fluxo de Áudio e Vídeo
+    function playStream(item) {
+      document.getElementById('current-name').innerText = item.name;
+      document.getElementById('current-group').innerText = item.group || "Ao Vivo";
+
+      if (window.Hls && Hls.isSupported() && (item.url.includes('.m3u8') || !item.url.endsWith('.mp4'))) {
+        if (hlsInstance) hlsInstance.destroy();
+        hlsInstance = new Hls({ enableWorker: true });
+        hlsInstance.loadSource(item.url);
+        hlsInstance.attachMedia(player);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(() => {}));
+      } else {
+        player.src = item.url;
+        player.play().catch(() => {});
+      }
+    }
+
+    // Canais Públicos de Demonstração
+    function loadDemo() {
+      const demo = `#EXTM3U
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/e/e5/NASA_logo.svg" group-title="Notícias",NASA TV HD
+https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/b/b2/Euronews_logo_2016.svg" group-title="Notícias",Euronews Português
+https://euronews-euronewsportuguese-1-pt.samsung.wurl.tv/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://peach.blender.org/wp-content/uploads/bbb-splash.png" group-title="Filmes",Big Buck Bunny (Filme)
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+#EXTINF:-1 tvg-logo="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg" group-title="Séries",Tears of Steel S01E01
+https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8`;
+      applyData(demo);
+    }
+
+    // Vinculação de Ações dos Botões
+    function attachListeners() {
+      document.getElementById('btn-top-home').onclick = () => goToScreen('home');
+      document.getElementById('btn-top-add').onclick = () => goToScreen('add');
+
+      document.getElementById('card-to-live').onclick = () => goToScreen('live');
+      document.getElementById('card-to-vod').onclick = () => goToScreen('vod');
+      document.getElementById('card-to-series').onclick = () => goToScreen('series');
+
+      document.getElementById('btn-home-add').onclick = () => goToScreen('add');
+      document.getElementById('btn-home-demo').onclick = loadDemo;
+      document.getElementById('btn-cancel-add').onclick = () => goToScreen('home');
+
+      // Tela Cheia
+      document.getElementById('btn-fullscreen').onclick = () => {
+        if (!document.fullscreenElement) {
+          player.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      };
+
+      // 1. Processar URL
+      document.getElementById('btn-submit-url').onclick = () => {
+        let url = document.getElementById('url-input').value.trim();
+        if (!url) return alert("Digite a URL da lista primeiro.");
+
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        alert("Baixando lista...");
+
+        fetch(proxyUrl)
+          .then(r => {
+            if (!r.o
